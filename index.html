@@ -211,18 +211,92 @@ footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
   <footer>RII R11 · Signal Command Center · Web Dashboard v1.0</footer>
 </main>
 
-<script>
-const direction = document.getElementById('direction');
-const rows = document.getElementById('rows');
-direction.addEventListener('change', render);
-document.getElementById('clear').addEventListener('click', () => {
-  rows.innerHTML = '<tr><td colspan="8" class="muted">Belum ada signal. Menunggu sambungan webhook.</td></tr>';
-  document.getElementById('total').textContent = '0';
-});
-function render() {
-  // Signal sebenar akan dipaparkan selepas API webhook disambungkan.
-  rows.innerHTML = '<tr><td colspan="8" class="muted">Tiada data langsung. Sambungan webhook belum disediakan.</td></tr>';
+
+const API_URL = "https://rii-r11-backend.onrender.com/signals";
+
+const direction = document.getElementById("direction");
+const rows = document.getElementById("rows");
+
+async function render() {
+  try {
+    const response = await fetch(API_URL, { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const signals = await response.json();
+
+    const filtered = signals.filter(signal =>
+      direction.value === "ALL" ||
+      signal.signal === direction.value
+    );
+
+    document.getElementById("total").textContent = signals.length;
+
+    const active = signals.filter(signal =>
+      signal.status === "ACTIVE"
+    ).length;
+
+    const metrics = document.querySelectorAll(".metric strong");
+    if (metrics.length > 3) {
+      metrics[3].textContent = active;
+    }
+
+    if (filtered.length === 0) {
+      rows.innerHTML =
+        '<tr><td colspan="8" class="muted">Belum ada signal sebenar. Menunggu webhook.</td></tr>';
+      return;
+    }
+
+    rows.innerHTML = filtered.map(signal => {
+      const time = signal.time
+        ? new Date(signal.time).toLocaleString("ms-MY", {
+            timeZone: "Asia/Kuala_Lumpur"
+          })
+        : "-";
+
+      const cls = signal.signal === "BUY" ? "buy" : "sell";
+
+      return `
+        <tr>
+          <td>${escapeHTML(time)}</td>
+          <td class="${cls}">${escapeHTML(signal.signal)}</td>
+          <td>${escapeHTML(signal.symbol || "XAUUSD")}</td>
+          <td>${escapeHTML(signal.entry ?? "-")}</td>
+          <td>${escapeHTML(signal.tp1 ?? "-")}</td>
+          <td>${escapeHTML(signal.tp2 ?? "-")}</td>
+          <td>${escapeHTML(signal.sl ?? "-")}</td>
+          <td>${escapeHTML(signal.status || "-")}</td>
+        </tr>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("RII R11 dashboard:", error);
+    rows.innerHTML =
+      '<tr><td colspan="8" class="muted">Tidak dapat mengambil data. Cuba lagi sebentar.</td></tr>';
+  }
 }
-</script>
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+direction.addEventListener("change", render);
+
+document.getElementById("clear").addEventListener("click", () => {
+  alert("Rekod sebenar tidak dipadam daripada server.");
+});
+
+render();
+setInterval(render, 5000);
+
 </body>
 </html>
