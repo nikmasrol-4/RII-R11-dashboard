@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RII R11 Signal Command Center</title>
+<style>
+:root {
+  --bg:#0b1020; --panel:#141c30; --line:#29334b;
+  --text:#f1f5ff; --muted:#a8b2ca;
+  --green:#43d9a3; --red:#ff7a91; --purple:#a78bfa;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:Arial,sans-serif;
+}
+header {
+  padding:22px 18px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; max-width:1100px; margin:auto;
+}
+.logo { display:flex; align-items:center; gap:12px; }
+.mark {
+  background:#6d4aff; padding:13px; border-radius:12px;
+  font-weight:bold; font-size:20px;
+}
+h1 { margin:0; font-size:23px; }
+.sub { color:var(--muted); font-size:11px; margin-top:5px; }
+.status {
+  border:1px solid #7b5b26; color:#ffd479;
+  border-radius:20px; padding:8px 11px; font-size:11px;
+}
+main { max-width:1100px; margin:auto; padding:20px 16px 40px; }
+.panel {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:14px; padding:17px; margin-bottom:17px;
+}
+h2 { font-size:17px; margin:0 0 15px; }
+.muted { color:var(--muted); font-size:13px; line-height:1.6; }
+.grid {
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.metric { background:var(--panel); border:1px solid var(--line);
+  border-radius:12px; padding:16px; min-width:0; }
+.metric small { color:var(--muted); font-size:11px; }
+.metric strong { display:block; font-size:25px; margin-top:10px; }
+select,button {
+  background:#202a40; color:var(--text); border:1px solid var(--line);
+  padding:10px 12px; border-radius:8px; font-size:13px;
+}
+.controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:15px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { text-align:left; padding:13px 10px; border-bottom:1px solid var(--line); }
+th { color:var(--muted); font-weight:normal; }
+.buy { color:var(--green); font-weight:bold; }
+.sell { color:var(--red); font-weight:bold; }
+.demo { color:#ffd479; font-size:11px; }
+footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
+@media(max-width:650px) {
+  .grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  header { padding:17px 12px; }
+  h1 { font-size:19px; }
+  main { padding:14px 10px; }
+  .panel { padding:12px; }
+  .table-wrap { overflow-x:auto; }
+  table { min-width:690px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="mark">R11</div>
+    <div>
+      <h1>RII R11</h1>
+      <div class="sub">SIGNAL COMMAND CENTER</div>
+    </div>
+  </div>
+  <div class="status">● DEMO MODE</div>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Market Overview</h2>
+    <div class="muted">Instrument: <b>XAUUSD</b> · Timeframes: <b>M15 / M30 / H1</b></div>
+    <p class="muted">Status sambungan: Belum disambungkan kepada TradingView.</p>
+  </section>
+
+  <div class="grid">
+    <div class="metric"><small>TOTAL SIGNAL</small><strong id="total">0</strong></div>
+    <div class="metric"><small>WIN RATE</small><strong>—</strong></div>
+    <div class="metric"><small>NET PIPS</small><strong>—</strong></div>
+    <div class="metric"><small>ACTIVE SETUP</small><strong>0</strong></div>
+  </div>
+
+  <section class="panel">
+    <h2>Signal History</h2>
+    <div class="controls">
+      <select id="direction" aria-label="Filter signal">
+        <option value="ALL">Semua signal</option>
+        <option value="BUY">BUY sahaja</option>
+        <option value="SELL">SELL sahaja</option>
+      </select>
+      <button id="clear">Kosongkan demo</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Masa</th><th>Signal</th><th>Symbol</th>
+          <th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>Status</th>
+        </tr></thead>
+        <tbody id="rows">
+          <tr><td colspan="8" class="muted">Belum ada signal. Menunggu sambungan webhook.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Win rate dan net pips hanya akan dikira selepas rekod keputusan sebenar tersedia.</p>
+  </section>
+
+  <footer>RII R11 · Signal Command Center · Web Dashboard v1.0</footer>
+</main>
+
+<script>
+const direction = document.getElementById('direction');
+const rows = document.getElementById('rows');
+direction.addEventListener('change', render);
+document.getElementById('clear').addEventListener('click', () => {
+  rows.innerHTML = '<tr><td colspan="8" class="muted">Belum ada signal. Menunggu sambungan webhook.</td></tr>';
+  document.getElementById('total').textContent = '0';
+});
+function render() {
+  // Signal sebenar akan dipaparkan selepas API webhook disambungkan.
+  rows.innerHTML = '<tr><td colspan="8" class="muted">Tiada data langsung. Sambungan webhook belum disediakan.</td></tr>';
+}
+</script>
+</body>
+</html>
