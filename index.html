@@ -68,6 +68,94 @@ footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
   .table-wrap { overflow-x:auto; }
   table { min-width:690px; }
 }
+/* RII R11 MOBILE RESPONSIVE */
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  header {
+    padding: 16px 12px;
+    gap: 8px;
+  }
+
+  .logo {
+    gap: 8px;
+  }
+
+  .mark {
+    padding: 11px;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .status {
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+
+  main {
+    width: 100%;
+    padding: 14px 10px;
+  }
+
+  .panel {
+    padding: 14px 12px;
+    margin-bottom: 12px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .metric {
+    padding: 13px 10px;
+  }
+
+  .metric strong {
+    font-size: 23px;
+  }
+
+  button, select {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 690px;
+  }
+}
+
+@media (max-width: 360px) {
+  h1 {
+    font-size: 18px;
+  }
+
+  .status {
+    font-size: 9px;
+    padding: 6px;
+  }
+
+  .metric small {
+    font-size: 10px;
+  }
+
+  .metric strong {
+    font-size: 20px;
+  }
+}
+
 </style>
 </head>
 <body>
