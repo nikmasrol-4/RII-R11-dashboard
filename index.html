@@ -212,7 +212,8 @@ footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
 </main>
 
 
-const API_URL = "https://rii-r11-backend.onrender.com/signals";
+<script>
+  const API_URL = "https://rii-r11-backend.onrender.com/signals";
 
 const direction = document.getElementById("direction");
 const rows = document.getElementById("rows");
@@ -298,5 +299,6 @@ document.getElementById("clear").addEventListener("click", () => {
 render();
 setInterval(render, 5000);
 
+</script>
 </body>
 </html>
