@@ -37,7 +37,8 @@ def webhook():
     if not hmac.compare_digest(supplied_secret, secret):
         return jsonify({"error": "Unauthorized"}), 401
 
-    signal_type = str(data.get("signal", "")).upper()
+    signal_type = str(data.get("action", data.get("signal", ""))).upper()
+
 
     if signal_type not in ("BUY", "SELL"):
         return jsonify({"error": "Signal mesti BUY atau SELL"}), 400
@@ -45,7 +46,9 @@ def webhook():
     signal = {
         "time": datetime.now(timezone.utc).isoformat(),
         "signal": signal_type,
-        "symbol": str(data.get("symbol", "XAUUSD")),
+        
+"symbol": str(data.get("pair", data.get("symbol", "XAUUSD"))),
+
         "entry": data.get("entry"),
         "tp1": data.get("tp1"),
         "tp2": data.get("tp2"),
