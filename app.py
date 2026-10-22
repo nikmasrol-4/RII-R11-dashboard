@@ -10,7 +10,7 @@ import uuid
 app = Flask(__name__)
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "").strip()
-DB_PATH = os.getenv("DB_PATH", "/var/data/rii_signals.db")
+DB_PATH = os.getenv("DB_PATH", "rii_signals.db")
 
 db_lock = Lock()
 
