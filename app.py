@@ -18,6 +18,12 @@ ALLOWED_STATUSES = {
     "SL HIT", "CLOSED", "CANCELLED"
 }
 
+# Status ini menandakan syarat lock telah dipenuhi.
+UNLOCK_STATUSES = {"TP1 HIT", "SL HIT"}
+
+# Status akhir yang tidak boleh diaktifkan semula.
+FINAL_STATUSES = {"TP2 HIT", "SL HIT", "CLOSED", "CANCELLED"}
+
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
@@ -31,7 +37,9 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Methods"] = (
         "GET, POST, OPTIONS"
     )
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Headers"] = (
+        "Content-Type"
+    )
     return response
 
 
@@ -63,9 +71,15 @@ def init_db():
                 result_note TEXT
             )
         """)
+
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_signals_time
             ON signals(time)
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_signals_symbol_status
+            ON signals(symbol, status)
         """)
 
 
@@ -79,8 +93,23 @@ def valid_secret(data):
     )
 
 
+def find_active_setup(conn, symbol):
+    """Cari setup yang masih mengunci simbol ini."""
+    return conn.execute("""
+        SELECT id, signal, symbol, entry, tp1, sl, status, time
+        FROM signals
+        WHERE UPPER(symbol) = UPPER(?)
+          AND status = 'ACTIVE'
+        ORDER BY time DESC
+        LIMIT 1
+    """, (symbol,)).fetchone()
+
+
 def update_signal_status(data):
-    signal_id = str(data.get("id", data.get("trade_id", ""))).strip()
+    signal_id = str(
+        data.get("id", data.get("trade_id", ""))
+    ).strip()
+
     status = str(data.get("status", "")).upper().strip()
     note = str(data.get("note", ""))[:250] or None
 
@@ -94,10 +123,11 @@ def update_signal_status(data):
         }), 400
 
     with db_lock, get_db() as conn:
-        row = conn.execute(
-            "SELECT status FROM signals WHERE id = ?",
-            (signal_id,)
-        ).fetchone()
+        row = conn.execute("""
+            SELECT id, symbol, signal, status
+            FROM signals
+            WHERE id = ?
+        """, (signal_id,)).fetchone()
 
         if row is None:
             return jsonify({
@@ -107,8 +137,8 @@ def update_signal_status(data):
 
         current_status = row["status"]
 
-        # TP2 and SL are terminal outcomes.
-        if current_status in ("TP2 HIT", "SL HIT", "CLOSED", "CANCELLED"):
+        # Status akhir tidak boleh diaktifkan semula.
+        if current_status in FINAL_STATUSES:
             return jsonify({
                 "ok": True,
                 "message": "Status akhir dikekalkan",
@@ -116,7 +146,7 @@ def update_signal_status(data):
                 "status": current_status
             }), 200
 
-        # Do not downgrade TP1 back to ACTIVE.
+        # TP1 membuka lock. Jangan benarkan ACTIVE semula.
         if current_status == "TP1 HIT" and status == "ACTIVE":
             return jsonify({
                 "ok": True,
@@ -124,6 +154,20 @@ def update_signal_status(data):
                 "id": signal_id,
                 "status": current_status
             }), 200
+
+        # Lock ACTIVE hanya boleh dilepaskan melalui TP1 atau SL.
+        if current_status == "ACTIVE" and status not in (
+            "ACTIVE", "TP1 HIT", "SL HIT"
+        ):
+            return jsonify({
+                "error": "LOCK AKTIF",
+                "message": (
+                    "Setup hanya boleh ditamatkan untuk "
+                    "membuka lock melalui TP1 HIT atau SL HIT."
+                ),
+                "id": signal_id,
+                "status": current_status
+            }), 409
 
         conn.execute("""
             UPDATE signals
@@ -139,7 +183,11 @@ def update_signal_status(data):
             WHERE id = ?
         """, (signal_id,)).fetchone()
 
-    return jsonify({"ok": True, "signal": dict(record)}), 200
+    return jsonify({
+        "ok": True,
+        "signal": dict(record),
+        "lock_released": status in UNLOCK_STATUSES
+    }), 200
 
 
 @app.route("/", methods=["GET"])
@@ -148,7 +196,13 @@ def home():
         "system": "RII R11",
         "status": "online",
         "message": "RII R11 Trade Tracker Ready",
-        "endpoints": ["/webhook", "/signals", "/update-status"]
+        "signal_lock": "TP1_OR_SL",
+        "endpoints": [
+            "/webhook",
+            "/signals",
+            "/update-status",
+            "/lock-status"
+        ]
     })
 
 
@@ -163,6 +217,7 @@ def webhook():
         }), 503
 
     data = request.get_json(silent=True)
+
     if not isinstance(data, dict):
         return jsonify({"error": "JSON tidak sah"}), 400
 
@@ -171,7 +226,7 @@ def webhook():
 
     event = str(data.get("event", "")).upper().strip()
 
-    # Status updates arrive at the SAME webhook URL.
+    # Kemas kini keputusan trade sedia ada.
     if event in ("TP1_HIT", "TP2_HIT", "SL_HIT"):
         status_map = {
             "TP1_HIT": "TP1 HIT",
@@ -187,8 +242,18 @@ def webhook():
 
     if action not in ("BUY", "SELL"):
         return jsonify({
-            "error": "Action mesti BUY/SELL atau event TP1_HIT/TP2_HIT/SL_HIT"
+            "error": (
+                "Action mesti BUY/SELL atau event "
+                "TP1_HIT/TP2_HIT/SL_HIT"
+            )
         }), 400
+
+    symbol = str(
+        data.get("pair", data.get("symbol", "XAUUSD"))
+    ).strip().upper()
+
+    if not symbol:
+        return jsonify({"error": "Symbol diperlukan"}), 400
 
     try:
         entry = float(data["entry"])
@@ -200,7 +265,15 @@ def webhook():
             "error": "Entry, TP1, TP2 dan SL mesti nombor"
         }), 400
 
-    # The Pine Script must send a unique ID for each trade.
+    # Pastikan harga sah.
+    if not all(
+        value > 0 and value < float("inf")
+        for value in (entry, tp1, tp2, sl)
+    ):
+        return jsonify({
+            "error": "Harga mesti nombor positif yang sah"
+        }), 400
+
     signal_id = str(
         data.get("id", data.get("trade_id", ""))
     ).strip()
@@ -212,9 +285,7 @@ def webhook():
         "id": signal_id,
         "time": utc_now(),
         "signal": action,
-        "symbol": str(
-            data.get("pair", data.get("symbol", "XAUUSD"))
-        ),
+        "symbol": symbol,
         "timeframe": str(data.get("timeframe", "")),
         "entry": entry,
         "tp1": tp1,
@@ -225,36 +296,59 @@ def webhook():
         "result_note": None
     }
 
-    try:
-        with db_lock, get_db() as conn:
-            conn.execute("""
-                INSERT INTO signals (
-                    id, time, signal, symbol, timeframe,
-                    entry, tp1, tp2, sl, status,
-                    updated_at, result_note
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                signal["id"], signal["time"], signal["signal"],
-                signal["symbol"], signal["timeframe"],
-                signal["entry"], signal["tp1"], signal["tp2"],
-                signal["sl"], signal["status"],
-                signal["updated_at"], signal["result_note"]
-            ))
-    except sqlite3.IntegrityError:
-        return jsonify({
-            "error": "ID signal sudah wujud",
-            "id": signal_id
-        }), 409
+    with db_lock, get_db() as conn:
+        # Cegah ID pendua.
+        duplicate = conn.execute("""
+            SELECT id FROM signals WHERE id = ?
+        """, (signal_id,)).fetchone()
+
+        if duplicate:
+            return jsonify({
+                "error": "ID signal sudah wujud",
+                "id": signal_id
+            }), 409
+
+        # SIGNAL LOCK: satu setup aktif bagi setiap simbol.
+        active = find_active_setup(conn, symbol)
+
+        if active:
+            return jsonify({
+                "ok": False,
+                "rejected": True,
+                "reason": "SIGNAL_LOCK_ACTIVE",
+                "message": (
+                    "Signal baharu ditolak. Tunggu setup "
+                    "semasa menyentuh TP1 atau SL."
+                ),
+                "locked_by": dict(active),
+                "incoming_signal": action,
+                "incoming_symbol": symbol
+            }), 409
+
+        conn.execute("""
+            INSERT INTO signals (
+                id, time, signal, symbol, timeframe,
+                entry, tp1, tp2, sl, status,
+                updated_at, result_note
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            signal["id"], signal["time"], signal["signal"],
+            signal["symbol"], signal["timeframe"],
+            signal["entry"], signal["tp1"], signal["tp2"],
+            signal["sl"], signal["status"],
+            signal["updated_at"], signal["result_note"]
+        ))
 
     app.logger.info(
         "Signal diterima: %s %s id=%s",
-        action, signal["symbol"], signal_id
+        action, symbol, signal_id
     )
 
     return jsonify({
         "ok": True,
-        "message": "Signal diterima",
-        "signal": signal
+        "message": "Signal diterima; lock diaktifkan",
+        "signal": signal,
+        "lock_active": True
     }), 201
 
 
@@ -269,6 +363,7 @@ def update_status():
         }), 503
 
     data = request.get_json(silent=True)
+
     if not isinstance(data, dict):
         return jsonify({"error": "JSON tidak sah"}), 400
 
@@ -294,6 +389,24 @@ def get_signals():
         """).fetchall()
 
     return jsonify([dict(row) for row in records])
+
+
+@app.route("/lock-status", methods=["GET", "OPTIONS"])
+def lock_status():
+    if request.method == "OPTIONS":
+        return "", 204
+
+    symbol = request.args.get("symbol", "XAUUSD").strip().upper()
+
+    with db_lock, get_db() as conn:
+        active = find_active_setup(conn, symbol)
+
+    return jsonify({
+        "symbol": symbol,
+        "locked": active is not None,
+        "active_setup": dict(active) if active else None,
+        "unlock_conditions": ["TP1 HIT", "SL HIT"]
+    })
 
 
 if __name__ == "__main__":
