@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+dahfrom flask import Flask, request, jsonify
 from datetime import datetime, timezone
 from threading import Lock
 import os
@@ -196,7 +196,58 @@ def update_status():
     if not valid_secret(data):
         return jsonify({"error": "Unauthorized"}), 401
     return update_signal_status(data)
+@app.route("/reset-lock", methods=["POST", "OPTIONS"])
+def reset_lock():
+    if request.method == "OPTIONS":
+        return "", 204
 
+    if not WEBHOOK_SECRET:
+        return jsonify({"error": "WEBHOOK_SECRET belum ditetapkan"}), 503
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON tidak sah"}), 400
+
+    if not valid_secret(data):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    signal_id = str(data.get("id", "")).strip()
+    if not signal_id:
+        return jsonify({"error": "ID signal diperlukan"}), 400
+
+    with db_lock, get_db() as conn:
+        row = conn.execute(
+            "SELECT id, symbol, status FROM signals WHERE id = %s",
+            (signal_id,)
+        ).fetchone()
+
+        if row is None:
+            return jsonify({"error": "Signal tidak ditemui"}), 404
+
+        if row["status"] != "ACTIVE":
+            return jsonify({
+                "error": "Signal bukan ACTIVE",
+                "status": row["status"]
+            }), 409
+
+        conn.execute("""
+            UPDATE signals
+            SET status = 'CANCELLED',
+                updated_at = %s,
+                result_note = %s
+            WHERE id = %s
+        """, (
+            utc_now(),
+            "Manual reset lock; keputusan TP1/SL tidak disahkan.",
+            signal_id
+        ))
+
+    return jsonify({
+        "ok": True,
+        "message": "Lock dibuka; rekod signal dikekalkan sebagai CANCELLED.",
+        "id": signal_id,
+        "lock_released": True
+    }), 200
 
 @app.route("/signals", methods=["GET", "OPTIONS"])
 def get_signals():
