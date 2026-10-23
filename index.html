@@ -1,304 +1,76 @@
-
 <!DOCTYPE html>
-<html lang="ms">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RII R11 Signal Command Center</title>
+<html lang="ms"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>RII R11 Trade Result Tracker</title>
 <style>
-:root {
-  --bg:#0b1020; --panel:#141c30; --line:#29334b;
-  --text:#f1f5ff; --muted:#a8b2ca;
-  --green:#43d9a3; --red:#ff7a91; --purple:#a78bfa;
-}
-* { box-sizing:border-box; }
-body {
-  margin:0; background:var(--bg); color:var(--text);
-  font-family:Arial,sans-serif;
-}
-header {
-  padding:22px 18px; border-bottom:1px solid var(--line);
-  display:flex; align-items:center; justify-content:space-between;
-  gap:12px; max-width:1100px; margin:auto;
-}
-.logo { display:flex; align-items:center; gap:12px; }
-.mark {
-  background:#6d4aff; padding:13px; border-radius:12px;
-  font-weight:bold; font-size:20px;
-}
-h1 { margin:0; font-size:23px; }
-.sub { color:var(--muted); font-size:11px; margin-top:5px; }
-.status {
-  border:1px solid #7b5b26; color:#ffd479;
-  border-radius:20px; padding:8px 11px; font-size:11px;
-}
-main { max-width:1100px; margin:auto; padding:20px 16px 40px; }
-.panel {
-  background:var(--panel); border:1px solid var(--line);
-  border-radius:14px; padding:17px; margin-bottom:17px;
-}
-h2 { font-size:17px; margin:0 0 15px; }
-.muted { color:var(--muted); font-size:13px; line-height:1.6; }
-.grid {
-  display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:12px; margin-bottom:20px;
-}
-.metric { background:var(--panel); border:1px solid var(--line);
-  border-radius:12px; padding:16px; min-width:0; }
-.metric small { color:var(--muted); font-size:11px; }
-.metric strong { display:block; font-size:25px; margin-top:10px; }
-select,button {
-  background:#202a40; color:var(--text); border:1px solid var(--line);
-  padding:10px 12px; border-radius:8px; font-size:13px;
-}
-.controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:15px; }
-table { width:100%; border-collapse:collapse; font-size:13px; }
-th,td { text-align:left; padding:13px 10px; border-bottom:1px solid var(--line); }
-th { color:var(--muted); font-weight:normal; }
-.buy { color:var(--green); font-weight:bold; }
-.sell { color:var(--red); font-weight:bold; }
-.demo { color:#ffd479; font-size:11px; }
-footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
-@media(max-width:650px) {
-  .grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-  header { padding:17px 12px; }
-  h1 { font-size:19px; }
-  main { padding:14px 10px; }
-  .panel { padding:12px; }
-  .table-wrap { overflow-x:auto; }
-  table { min-width:690px; }
-}
-/* RII R11 MOBILE RESPONSIVE */
-@media (max-width: 600px) {
-  body {
-    font-size: 16px;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  header {
-    padding: 16px 12px;
-    gap: 8px;
-  }
-
-  .logo {
-    gap: 8px;
-  }
-
-  .mark {
-    padding: 11px;
-    font-size: 18px;
-  }
-
-  h1 {
-    font-size: 21px;
-  }
-
-  .status {
-    font-size: 10px;
-    padding: 7px 9px;
-  }
-
-  main {
-    width: 100%;
-    padding: 14px 10px;
-  }
-
-  .panel {
-    padding: 14px 12px;
-    margin-bottom: 12px;
-  }
-
-  .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-  }
-
-  .metric {
-    padding: 13px 10px;
-  }
-
-  .metric strong {
-    font-size: 23px;
-  }
-
-  button, select {
-    min-height: 44px;
-    font-size: 14px;
-  }
-
-  .table-wrap {
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  table {
-    min-width: 690px;
-  }
-}
-
-@media (max-width: 360px) {
-  h1 {
-    font-size: 18px;
-  }
-
-  .status {
-    font-size: 9px;
-    padding: 6px;
-  }
-
-  .metric small {
-    font-size: 10px;
-  }
-
-  .metric strong {
-    font-size: 20px;
-  }
-}
-
-</style>
-</head>
-<body>
-<header>
-  <div class="logo">
-    <div class="mark">R11</div>
-    <div>
-      <h1>RII R11</h1>
-      <div class="sub">SIGNAL COMMAND CENTER</div>
-    </div>
-  </div>
-  <div class="status">● DEMO MODE</div>
-</header>
-
-<main>
-  <section class="panel">
-    <h2>Market Overview</h2>
-    <div class="muted">Instrument: <b>XAUUSD</b> · Timeframes: <b>M15 / M30 / H1</b></div>
-    <p class="muted">Status sambungan: Dashboard aktif — menunggu signal RII R11.</p>
-  </section>
-
-  <div class="grid">
-    <div class="metric"><small>TOTAL SIGNAL</small><strong id="total">0</strong></div>
-    <div class="metric"><small>WIN RATE</small><strong>—</strong></div>
-    <div class="metric"><small>NET PIPS</small><strong>—</strong></div>
-    <div class="metric"><small>ACTIVE SETUP</small><strong>0</strong></div>
-  </div>
-
-  <section class="panel">
-    <h2>Signal History</h2>
-    <div class="controls">
-      <select id="direction" aria-label="Filter signal">
-        <option value="ALL">Semua signal</option>
-        <option value="BUY">BUY sahaja</option>
-        <option value="SELL">SELL sahaja</option>
-      </select>
-      <button id="clear">Kosongkan demo</button>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>Masa</th><th>Signal</th><th>Symbol</th>
-          <th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>Status</th>
-        </tr></thead>
-        <tbody id="rows">
-          <tr><td colspan="8" class="muted">Belum ada signal. Menunggu sambungan webhook.</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="muted">Win rate dan net pips hanya akan dikira selepas rekod keputusan sebenar tersedia.</p>
-  </section>
-
-  <footer>RII R11 · Signal Command Center · Web Dashboard v1.0</footer>
-</main>
-
-
+:root{--bg:#0b1020;--panel:#141c30;--line:#29334b;--text:#f1f5ff;--muted:#a8b2ca;--green:#43d9a3;--red:#ff7a91;--gold:#ffd479}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:auto}.logo{display:flex;align-items:center;gap:12px}.mark{background:#6d4aff;padding:13px;border-radius:12px;font-weight:bold;font-size:20px}h1{margin:0;font-size:23px}.sub{color:var(--muted);font-size:11px;margin-top:5px}.status{border:1px solid #285b4c;color:var(--green);border-radius:20px;padding:8px 11px;font-size:11px}main{max-width:1100px;margin:auto;padding:20px 16px 40px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:17px}h2{font-size:17px;margin:0 0 15px}.muted{color:var(--muted);font-size:13px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}.metric small{color:var(--muted);font-size:11px}.metric strong{display:block;font-size:25px;margin-top:10px}select,button{background:#202a40;color:var(--text);border:1px solid var(--line);padding:10px 12px;border-radius:8px;font-size:13px;cursor:pointer}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px;min-width:850px}th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--muted);font-weight:normal}.buy{color:var(--green);font-weight:bold}.sell{color:var(--red);font-weight:bold}.state{font-weight:bold}.state.OPEN{color:var(--gold)}.state.WIN{color:var(--green)}.state.LOSS{color:var(--red)}footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}@media(max-width:650px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}header{padding:17px 12px}h1{font-size:19px}main{padding:14px 10px}.panel{padding:12px}}
+</style></head><body>
+<header><div class="logo"><div class="mark">R11</div><div><h1>RII R11</h1><div class="sub">TRADE RESULT TRACKER</div></div></div><div class="status" id="connection">● MENYAMBUNG...</div></header>
+<main><section class="panel"><h2>Market Overview</h2><div class="muted">Instrument: <b>XAUUSD</b> · Timeframes: <b>M15 / M30 / H1</b></div><p class="muted" id="lastUpdate">Mengambil data daripada backend RII R11.</p></section>
+<div class="grid"><div class="metric"><small>TOTAL SIGNAL (30 HARI)</small><strong id="total">0</strong></div><div class="metric"><small>WIN RATE</small><strong id="winRate">—</strong></div><div class="metric"><small>NET PIPS</small><strong id="netPips">—</strong></div><div class="metric"><small>ACTIVE SETUP</small><strong id="active">0</strong></div></div>
+<section class="panel"><h2>Signal History</h2><div class="controls"><select id="direction" aria-label="Filter signal"><option value="ALL">Semua signal</option><option value="BUY">BUY sahaja</option><option value="SELL">SELL sahaja</option><option value="OPEN">OPEN sahaja</option><option value="WIN">WIN sahaja</option><option value="LOSS">LOSS sahaja</option><option value="REJECTED">REJECTED sahaja</option></select><button id="refresh">Refresh sekarang</button></div>
+<div class="table-wrap"><table><thead><tr><th>Masa</th><th>Signal</th><th>Symbol</th><th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>Status</th><th>Net Pips</th></tr></thead><tbody id="rows"><tr><td colspan="9" class="muted">Memuatkan...</td></tr></tbody></table></div>
+<p class="muted">WIN = TP1 dicapai dahulu. LOSS = SL dicapai sebelum TP1. OPEN = belum ada keputusan. Net Pips hanya dikira apabila event keputusan menghantar nilai net_pips.</p><p class="muted">Sejarah 30 hari. Pembersihan rekod lama dijalankan pada/selepas 5:00 pagi waktu Malaysia. Nota: SQLite di direktori sementara Render boleh hilang apabila servis diganti; storan kekal memerlukan persistent disk atau PostgreSQL.</p></section><footer>RII R11 · Signal Command Center · Trade Result Tracker</footer></main>
 <script>
-  const API_URL = "https://rii-r11-backend.onrender.com/signals";
+const BASE_URL='https://rii-r11-backend.onrender.com';
+const direction=document.getElementById('direction');
+const rows=document.getElementById('rows');
 
-const direction = document.getElementById("direction");
-const rows = document.getElementById("rows");
-
-async function render() {
+async function render(){
   try {
-    const response = await fetch(API_URL, { cache: "no-store" });
+    // Backend app.py currently provides /signals but not /stats.
+    // Calculate dashboard metrics from /signals so one missing endpoint
+    // cannot make the entire dashboard appear disconnected.
+    const response=await fetch(BASE_URL+'/signals',{cache:'no-store'});
+    if(!response.ok) throw new Error('Backend HTTP '+response.status);
+    const allSignals=await response.json();
+    if(!Array.isArray(allSignals)) throw new Error('Format /signals tidak sah');
 
-    if (!response.ok) {
-      throw new Error("HTTP " + response.status);
-    }
+    document.getElementById('connection').textContent='● BACKEND ONLINE';
+    document.getElementById('lastUpdate').textContent='Kemas kini: '+new Date().toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'});
 
-    const signals = await response.json();
+    const cutoff=Date.now()-30*24*60*60*1000;
+    const recent=allSignals.filter(s=>s.time && !Number.isNaN(Date.parse(s.time)) && Date.parse(s.time)>=cutoff);
+    const activeCount=recent.filter(s=>String(s.status||'').toUpperCase()==='ACTIVE').length;
+    const wins=recent.filter(s=>['TP1 HIT','TP2 HIT','TP3 HIT','WIN'].includes(String(s.status||'').toUpperCase())).length;
+    const losses=recent.filter(s=>['SL HIT','LOSS'].includes(String(s.status||'').toUpperCase())).length;
+    const decided=wins+losses;
+    const pipValues=recent.map(s=>Number(s.net_pips)).filter(v=>Number.isFinite(v));
+    const netPips=pipValues.length?pipValues.reduce((a,b)=>a+b,0):null;
 
-    const filtered = signals.filter(signal =>
-      direction.value === "ALL" ||
-      signal.signal === direction.value
-    );
+    document.getElementById('total').textContent=recent.length;
+    document.getElementById('active').textContent=activeCount;
+    document.getElementById('winRate').textContent=decided?Math.round(wins/decided*100)+'%':'—';
+    document.getElementById('netPips').textContent=netPips===null?'—':(netPips>0?'+':'')+netPips;
 
-    document.getElementById("total").textContent = signals.length;
+    const filter=direction.value;
+    const filtered=allSignals.filter(s=>{
+      const sig=String(s.signal||'').toUpperCase();
+      const status=String(s.status||'OPEN').toUpperCase();
+      if(filter==='ALL') return true;
+      if(filter==='BUY'||filter==='SELL') return sig===filter;
+      if(filter==='OPEN') return status==='ACTIVE'||status==='OPEN';
+      if(filter==='WIN') return ['TP1 HIT','TP2 HIT','TP3 HIT','WIN'].includes(status);
+      if(filter==='LOSS') return ['SL HIT','LOSS'].includes(status);
+      return status===filter;
+    });
 
-    const active = signals.filter(signal =>
-      signal.status === "ACTIVE"
-    ).length;
-
-    const metrics = document.querySelectorAll(".metric strong");
-    if (metrics.length > 3) {
-      metrics[3].textContent = active;
-    }
-
-    if (filtered.length === 0) {
-      rows.innerHTML =
-        '<tr><td colspan="8" class="muted">Belum ada signal sebenar. Menunggu webhook.</td></tr>';
-      return;
-    }
-
-    rows.innerHTML = filtered.map(signal => {
-      const time = signal.time
-        ? new Date(signal.time).toLocaleString("ms-MY", {
-            timeZone: "Asia/Kuala_Lumpur"
-          })
-        : "-";
-
-      const cls = signal.signal === "BUY" ? "buy" : "sell";
-
-      return `
-        <tr>
-          <td>${escapeHTML(time)}</td>
-          <td class="${cls}">${escapeHTML(signal.signal)}</td>
-          <td>${escapeHTML(signal.symbol || "XAUUSD")}</td>
-          <td>${escapeHTML(signal.entry ?? "-")}</td>
-          <td>${escapeHTML(signal.tp1 ?? "-")}</td>
-          <td>${escapeHTML(signal.tp2 ?? "-")}</td>
-          <td>${escapeHTML(signal.sl ?? "-")}</td>
-          <td>${escapeHTML(signal.status || "-")}</td>
-        </tr>
-      `;
-    }).join("");
-
-  } catch (error) {
-    console.error("RII R11 dashboard:", error);
-    rows.innerHTML =
-      '<tr><td colspan="8" class="muted">Tidak dapat mengambil data. Cuba lagi sebentar.</td></tr>';
+    if(!filtered.length){rows.innerHTML='<tr><td colspan="9" class="muted">Tiada signal untuk tapisan ini.</td></tr>';return;}
+    rows.innerHTML=filtered.map(s=>{
+      const t=s.time?new Date(s.time).toLocaleString('ms-MY',{timeZone:'Asia/Kuala_Lumpur'}):'-';
+      const sig=String(s.signal||'-').toUpperCase();
+      const st=String(s.status||'OPEN').toUpperCase();
+      const note=s.result_note?`<div class="muted">${esc(s.result_note)}</div>`:'';
+      return `<tr><td>${esc(t)}</td><td class="${sig==='BUY'?'buy':sig==='SELL'?'sell':''}">${esc(sig)}</td><td>${esc(s.symbol||'XAUUSD')}</td><td>${esc(s.entry??'-')}</td><td>${esc(s.tp1??'-')}</td><td>${esc(s.tp2??'-')}</td><td>${esc(s.sl??'-')}</td><td class="state ${esc(st)}">${esc(st)}${note}</td><td>${esc(s.net_pips??'-')}</td></tr>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('connection').textContent='● SAMBUNGAN GAGAL';
+    document.getElementById('lastUpdate').textContent='Tidak dapat mengambil data daripada /signals. Semak servis Render.';
+    rows.innerHTML='<tr><td colspan="9" class="muted">Backend tidak dapat dihubungi. Cuba refresh semula.</td></tr>';
   }
 }
-
-function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, char => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
-
-direction.addEventListener("change", render);
-
-document.getElementById("clear").addEventListener("click", () => {
-  alert("Rekod sebenar tidak dipadam daripada server.");
-});
-
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+direction.addEventListener('change',render);
+document.getElementById('refresh').addEventListener('click',render);
 render();
-setInterval(render, 5000);
-
-</script>
-</body>
-</html>
+setInterval(render,5000);
+</script></body></html>
