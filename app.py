@@ -231,6 +231,8 @@ def lock_status():
     return jsonify({"symbol": symbol, "locked": active is not None, "active_setup": dict(active) if active else None, "unlock_conditions": ["TP1 HIT", "SL HIT"]})
 
 
-if __name__ == "__main__":
+with app.app_context():
     init_db()
+
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "10000")))
